@@ -16,14 +16,32 @@ class Echo implements Command {
   }
 }
 
+class Set implements Command {
+  interpret(interpreter: Interpreter, key: BulkString, value: BulkString): string {
+    interpreter.data[key.value] = value.value;
+    return new SimpleString("OK").serialize();
+  }
+}
+
+class Get implements Command {
+  interpret(interpreter: Interpreter, key: BulkString): string {
+    return new BulkString(interpreter.data[key.value]).serialize();
+  }
+}
+
 const cmdStrToType: { [key: string]: any } = {
   "PING": Ping,
-  "ECHO": Echo
+  "ECHO": Echo,
+  "SET": Set,
+  "GET": Get,
+}
+
+interface RedisDictionary {
+  [key: string]: string;
 }
 
 export class Interpreter {
-
-  constructor() { }
+  data: RedisDictionary = {};
 
   public interpret(message: string): string {
     const root = parse(message);
