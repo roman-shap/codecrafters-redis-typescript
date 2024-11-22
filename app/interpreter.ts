@@ -22,17 +22,38 @@ class Echo implements Command {
   }
 }
 
+interface KeyTTL {
+  value: number;
+  unit: "seconds" | "milliseconds";
+}
+
 class Set implements Command {
   key: string;
   value: string;
+  ttl?: KeyTTL;
 
-  constructor(key: BulkString, value: BulkString) {
+  constructor(key: BulkString, value: BulkString, ...args: BulkString[]) {
     this.key = key.value;
     this.value = value.value;
+    this.parseExpiry(...args);
+  }
+
+  private parseExpiry(...args: BulkString[]): void {
+    const pxIdx = args.findIndex((arg) => arg.value.toUpperCase() === "PX");
+    if (pxIdx !== -1) {
+      this.ttl = { value: Number(args[pxIdx + 1].value), unit: "milliseconds" };
+    }
   }
 
   interpret(interpreter: Interpreter): string {
-    interpreter.data[this.key] = this.value;
+    interpreter.expireKey(this.key);
+    const now = Date.now();
+    interpreter.data[this.key] = {
+      value: this.value,
+      createdAt: now,
+      ttl: this.ttl
+    };
+    console.log(`${now}: Created key ${this.key} with value ${this.value}, ttl: ${this.ttl?.value} ${this.ttl?.unit}`);
     return String(new SimpleString("OK"));
   }
 }
@@ -45,7 +66,8 @@ class Get implements Command {
   }
 
   interpret(interpreter: Interpreter): string {
-    return String(new BulkString(interpreter.data[this.key]));
+    interpreter.expireKey(this.key);
+    return String(new BulkString(interpreter.data[this.key].value));
   }
 }
 
@@ -57,7 +79,11 @@ const cmdStrToType: { [key: string]: any } = {
 }
 
 interface RedisDictionary {
-  [key: string]: string;
+  [key: string]: {
+    value: string | null,
+    createdAt: number,
+    ttl?: KeyTTL
+  };
 }
 
 export class Interpreter {
@@ -75,5 +101,14 @@ export class Interpreter {
     const response = new cmdStrToType[cmd](...root.value.slice(1)).interpret(this);
     console.log("Response parse tree is:", JSON.stringify(parse(response)));
     return response
+  }
+
+  public expireKey(key: string): void {
+    if (this.data[key] &&
+      this.data[key].ttl &&
+      this.data[key].ttl.unit === "milliseconds" &&
+      Date.now() - this.data[key].createdAt > this.data[key].ttl.value) {
+      this.data[key].value = null;
+    }
   }
 }
