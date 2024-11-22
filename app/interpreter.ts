@@ -5,47 +5,47 @@ interface Command {
 }
 
 class Ping implements Command {
-  interpret(interpreter: Interpreter): string {
-    return new SimpleString("PONG").toString();
+  interpret(_interpreter: Interpreter): string {
+    return String(new SimpleString("PONG"));
   }
 }
 
 class Echo implements Command {
-  message: BulkString;
+  message: string;
 
   constructor(message: BulkString) {
-    this.message = message;
+    this.message = String(message);
   }
 
   interpret(_interpreter: Interpreter): string {
-    return this.message.toString();
+    return this.message;
   }
 }
 
 class Set implements Command {
-  key: BulkString;
-  value: BulkString;
+  key: string;
+  value: string;
 
   constructor(key: BulkString, value: BulkString) {
-    this.key = key;
-    this.value = value;
+    this.key = key.value;
+    this.value = value.value;
   }
 
   interpret(interpreter: Interpreter): string {
-    interpreter.data[this.key.value] = this.value.value;
-    return new SimpleString("OK").toString();
+    interpreter.data[this.key] = this.value;
+    return String(new SimpleString("OK"));
   }
 }
 
 class Get implements Command {
-  key: BulkString;
+  key: string;
 
   constructor(key: BulkString) {
-    this.key = key;
+    this.key = key.value;
   }
 
   interpret(interpreter: Interpreter): string {
-    return new BulkString(interpreter.data[this.key.value]).toString();
+    return String(new BulkString(interpreter.data[this.key]));
   }
 }
 
