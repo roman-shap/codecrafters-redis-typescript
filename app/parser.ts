@@ -7,7 +7,7 @@ export abstract class RESPNode {
     this.value = value;
   }
 
-  public serialize(): string {
+  public toString(): string {
     return `${this.firstByte}${this.serializeLength()}${this.serializeValue()}`;
   }
 
@@ -62,7 +62,7 @@ export class Array extends RESPNode {
   }
 
   serializeValue(): string {
-    return this.value.map((node: RESPNode) => node.serialize()).join("");
+    return this.value.map((node: RESPNode) => node.toString()).join("");
   }
 
   public static parse(tokens: string[]): [Array, number] {

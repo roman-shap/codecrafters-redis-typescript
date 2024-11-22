@@ -6,7 +6,7 @@ interface Command {
 
 class Ping implements Command {
   interpret(interpreter: Interpreter): string {
-    return new SimpleString("PONG").serialize();
+    return new SimpleString("PONG").toString();
   }
 }
 
@@ -18,7 +18,7 @@ class Echo implements Command {
   }
 
   interpret(_interpreter: Interpreter): string {
-    return this.message.serialize();
+    return this.message.toString();
   }
 }
 
@@ -33,7 +33,7 @@ class Set implements Command {
 
   interpret(interpreter: Interpreter): string {
     interpreter.data[this.key.value] = this.value.value;
-    return new SimpleString("OK").serialize();
+    return new SimpleString("OK").toString();
   }
 }
 
@@ -45,7 +45,7 @@ class Get implements Command {
   }
 
   interpret(interpreter: Interpreter): string {
-    return new BulkString(interpreter.data[this.key.value]).serialize();
+    return new BulkString(interpreter.data[this.key.value]).toString();
   }
 }
 
