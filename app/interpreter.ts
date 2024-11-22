@@ -1,7 +1,7 @@
 import { BulkString, parse, SimpleString } from "./parser";
 
 interface Command {
-  interpret(interpreter: Interpreter, ...args: BulkString[]): string;
+  interpret(interpreter: Interpreter): string;
 }
 
 class Ping implements Command {
@@ -11,21 +11,41 @@ class Ping implements Command {
 }
 
 class Echo implements Command {
-  interpret(_interpreter: Interpreter, value: BulkString): string {
-    return value.serialize();
+  message: BulkString;
+
+  constructor(message: BulkString) {
+    this.message = message;
+  }
+
+  interpret(_interpreter: Interpreter): string {
+    return this.message.serialize();
   }
 }
 
 class Set implements Command {
-  interpret(interpreter: Interpreter, key: BulkString, value: BulkString): string {
-    interpreter.data[key.value] = value.value;
+  key: BulkString;
+  value: BulkString;
+
+  constructor(key: BulkString, value: BulkString) {
+    this.key = key;
+    this.value = value;
+  }
+
+  interpret(interpreter: Interpreter): string {
+    interpreter.data[this.key.value] = this.value.value;
     return new SimpleString("OK").serialize();
   }
 }
 
 class Get implements Command {
-  interpret(interpreter: Interpreter, key: BulkString): string {
-    return new BulkString(interpreter.data[key.value]).serialize();
+  key: BulkString;
+
+  constructor(key: BulkString) {
+    this.key = key;
+  }
+
+  interpret(interpreter: Interpreter): string {
+    return new BulkString(interpreter.data[this.key.value]).serialize();
   }
 }
 
@@ -52,7 +72,7 @@ export class Interpreter {
     if (!cmdStrToType[cmd]) {
       throw new Error(`Unknown command: ${cmd}`);
     }
-    const response = new cmdStrToType[cmd]().interpret(this, ...root.value.slice(1));
+    const response = new cmdStrToType[cmd](...root.value.slice(1)).interpret(this);
     console.log("Response parse tree is:", JSON.stringify(parse(response)));
     return response
   }
