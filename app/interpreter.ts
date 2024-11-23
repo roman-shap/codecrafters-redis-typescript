@@ -1,76 +1,9 @@
-import type { KeyTTL, Database } from "./database";
-import { BulkString, parse, SimpleString } from "./parser";
-
-abstract class Command {
-  database: Database;
-
-  constructor(database: Database) {
-    this.database = database;
-  }
-
-  abstract interpret(): string;
-}
-
-class Ping extends Command {
-  constructor(database: Database) {
-    super(database);
-  }
-
-  interpret(): string {
-    return String(new SimpleString("PONG"));
-  }
-}
-
-class Echo extends Command {
-  message: string;
-
-  constructor(database: Database, message: BulkString) {
-    super(database);
-    this.message = String(message);
-  }
-
-  interpret(): string {
-    return this.message;
-  }
-}
-
-class Set extends Command {
-  key: string;
-  value: string;
-  ttl?: KeyTTL;
-
-  constructor(database: Database, key: BulkString, value: BulkString, ...args: BulkString[]) {
-    super(database);
-    this.key = key.value;
-    this.value = value.value;
-    this.parseExpiry(...args);
-  }
-
-  private parseExpiry(...args: BulkString[]): void {
-    const pxIdx = args.findIndex((arg) => arg.value.toUpperCase() === "PX");
-    if (pxIdx !== -1) {
-      this.ttl = { value: Number(args[pxIdx + 1].value), unit: "milliseconds" };
-    }
-  }
-
-  interpret(): string {
-    this.database.set(this.key, this.value, this.ttl);
-    return String(new SimpleString("OK"));
-  }
-}
-
-class Get extends Command {
-  key: string;
-
-  constructor(database: Database, key: BulkString) {
-    super(database);
-    this.key = key.value;
-  }
-
-  interpret(): string {
-    return String(new BulkString(this.database.get(this.key)));
-  }
-}
+import { parse } from "./parser";
+import { Echo } from "./commands/echo";
+import { Get } from "./commands/get";
+import { Ping } from "./commands/ping";
+import { Set } from "./commands/set";
+import type { Database } from "./database";
 
 const cmdStrToType: { [key: string]: any } = {
   "PING": Ping,
