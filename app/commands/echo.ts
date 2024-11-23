@@ -1,5 +1,5 @@
 import type { Database } from "../database";
-import type { BulkString } from "../parser";
+import type { BulkString } from "../resp/bulkString";
 import { Command } from "./command";
 
 export class Echo extends Command {

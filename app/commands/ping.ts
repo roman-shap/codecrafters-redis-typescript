@@ -1,5 +1,5 @@
 import type { Database } from "../database";
-import { SimpleString } from "../parser";
+import { SimpleString } from "../resp/simpleString";
 import { Command } from "./command";
 
 export class Ping extends Command {

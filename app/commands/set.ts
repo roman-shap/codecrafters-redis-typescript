@@ -1,5 +1,6 @@
 import type { KeyTTL, Database } from "../database";
-import { BulkString, SimpleString } from "../parser";
+import { BulkString } from "../resp/bulkString";
+import { SimpleString } from "../resp/simpleString";
 import { Command } from "./command";
 
 export class Set extends Command {
