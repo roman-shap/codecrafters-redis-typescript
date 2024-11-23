@@ -3,11 +3,39 @@ export interface KeyTTL {
   unit: "seconds" | "milliseconds";
 }
 
-export interface Database {
-  [key: string]: {
-    value: string | null;
-    createdAt: number;
-    ttl?: KeyTTL;
+type Key = string;
+type Value = string | null;
+
+type KeyMetadata = {
+  createdAt: number;
+  ttl?: KeyTTL;
+};
+
+export class Database extends Map<Key, Value> {
+  private metadata: Map<Key, KeyMetadata> = new Map();
+
+  public get(key: Key): Value {
+    this.expireKey(key);
+    return super.get(key) || null;
+  }
+
+  public set(key: Key, value: Value, ttl?: KeyTTL): this {
+    this.expireKey(key);
+    const now = Date.now();
+    super.set(key, value);
+    this.metadata.set(key, { createdAt: Date.now(), ttl });
+    console.log(`${now}: Created key ${key} with value ${value}, ttl: ${ttl?.value} ${ttl?.unit}`);
+    return this;
+  }
+
+  private expireKey(key: Key): void {
+    const metadata = this.metadata.get(key);
+    if (metadata &&
+      metadata.ttl?.unit === "milliseconds" &&
+      Date.now() - metadata.createdAt > metadata.ttl.value) {
+      this.delete(key);
+      this.metadata.delete(key);
+    }
   };
 }
 

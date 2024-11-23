@@ -1,7 +1,9 @@
 import * as net from "net";
 import { Interpreter } from "./interpreter";
+import { Database } from "./database";
 
-const interpreter = new Interpreter();
+const database = new Database();
+const interpreter = new Interpreter(database);
 
 const server: net.Server = net.createServer((connection: net.Socket) => {
   connection.on("data", (data) => {

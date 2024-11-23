@@ -1,34 +1,46 @@
 import type { KeyTTL, Database } from "./database";
 import { BulkString, parse, SimpleString } from "./parser";
 
-interface Command {
-  interpret(interpreter: Interpreter): string;
+abstract class Command {
+  database: Database;
+
+  constructor(database: Database) {
+    this.database = database;
+  }
+
+  abstract interpret(): string;
 }
 
-class Ping implements Command {
-  interpret(_interpreter: Interpreter): string {
+class Ping extends Command {
+  constructor(database: Database) {
+    super(database);
+  }
+
+  interpret(): string {
     return String(new SimpleString("PONG"));
   }
 }
 
-class Echo implements Command {
+class Echo extends Command {
   message: string;
 
-  constructor(message: BulkString) {
+  constructor(database: Database, message: BulkString) {
+    super(database);
     this.message = String(message);
   }
 
-  interpret(_interpreter: Interpreter): string {
+  interpret(): string {
     return this.message;
   }
 }
 
-class Set implements Command {
+class Set extends Command {
   key: string;
   value: string;
   ttl?: KeyTTL;
 
-  constructor(key: BulkString, value: BulkString, ...args: BulkString[]) {
+  constructor(database: Database, key: BulkString, value: BulkString, ...args: BulkString[]) {
+    super(database);
     this.key = key.value;
     this.value = value.value;
     this.parseExpiry(...args);
@@ -41,29 +53,22 @@ class Set implements Command {
     }
   }
 
-  interpret(interpreter: Interpreter): string {
-    interpreter.expireKey(this.key);
-    const now = Date.now();
-    interpreter.data[this.key] = {
-      value: this.value,
-      createdAt: now,
-      ttl: this.ttl
-    };
-    console.log(`${now}: Created key ${this.key} with value ${this.value}, ttl: ${this.ttl?.value} ${this.ttl?.unit}`);
+  interpret(): string {
+    this.database.set(this.key, this.value, this.ttl);
     return String(new SimpleString("OK"));
   }
 }
 
-class Get implements Command {
+class Get extends Command {
   key: string;
 
-  constructor(key: BulkString) {
+  constructor(database: Database, key: BulkString) {
+    super(database);
     this.key = key.value;
   }
 
-  interpret(interpreter: Interpreter): string {
-    interpreter.expireKey(this.key);
-    return String(new BulkString(interpreter.data[this.key].value));
+  interpret(): string {
+    return String(new BulkString(this.database.get(this.key)));
   }
 }
 
@@ -75,7 +80,11 @@ const cmdStrToType: { [key: string]: any } = {
 }
 
 export class Interpreter {
-  data: Database = {};
+  database: Database;
+
+  constructor(database: Database) {
+    this.database = database
+  }
 
   public interpret(message: string): string {
     const root = parse(message);
@@ -86,17 +95,9 @@ export class Interpreter {
     if (!cmdStrToType[cmd]) {
       throw new Error(`Unknown command: ${cmd}`);
     }
-    const response = new cmdStrToType[cmd](...root.value.slice(1)).interpret(this);
+    const response = new cmdStrToType[cmd](this.database, ...root.value.slice(1)).interpret();
     console.log("Response parse tree is:", JSON.stringify(parse(response)));
     return response
   }
 
-  public expireKey(key: string): void {
-    if (this.data[key] &&
-      this.data[key].ttl &&
-      this.data[key].ttl.unit === "milliseconds" &&
-      Date.now() - this.data[key].createdAt > this.data[key].ttl.value) {
-      this.data[key].value = null;
-    }
-  }
 }
