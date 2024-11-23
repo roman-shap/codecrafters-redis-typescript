@@ -1,3 +1,4 @@
+import type { KeyTTL, Database } from "./database";
 import { BulkString, parse, SimpleString } from "./parser";
 
 interface Command {
@@ -20,11 +21,6 @@ class Echo implements Command {
   interpret(_interpreter: Interpreter): string {
     return this.message;
   }
-}
-
-interface KeyTTL {
-  value: number;
-  unit: "seconds" | "milliseconds";
 }
 
 class Set implements Command {
@@ -78,16 +74,8 @@ const cmdStrToType: { [key: string]: any } = {
   "GET": Get,
 }
 
-interface RedisDictionary {
-  [key: string]: {
-    value: string | null,
-    createdAt: number,
-    ttl?: KeyTTL
-  };
-}
-
 export class Interpreter {
-  data: RedisDictionary = {};
+  data: Database = {};
 
   public interpret(message: string): string {
     const root = parse(message);
