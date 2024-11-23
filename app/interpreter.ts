@@ -3,6 +3,7 @@ import { Echo } from "./commands/echo";
 import { Get } from "./commands/get";
 import { Ping } from "./commands/ping";
 import { Set } from "./commands/set";
+import { Config } from "./commands/config";
 import type { Database } from "./database";
 
 const cmdStrToType: { [key: string]: any } = {
@@ -10,6 +11,7 @@ const cmdStrToType: { [key: string]: any } = {
   "ECHO": Echo,
   "SET": Set,
   "GET": Get,
+  "CONFIG": Config,
 }
 
 export class Interpreter {

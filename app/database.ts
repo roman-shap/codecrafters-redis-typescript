@@ -11,8 +11,19 @@ type KeyMetadata = {
   ttl?: KeyTTL;
 };
 
+export type Config = {
+  dir?: string;
+  dbfilename?: string;
+};
+
 export class Database extends Map<Key, Value> {
+  config: Config = {};
   private metadata: Map<Key, KeyMetadata> = new Map();
+
+  constructor(config: Config) {
+    super();
+    this.config = config;
+  }
 
   public get(key: Key): Value {
     this.expireKey(key);

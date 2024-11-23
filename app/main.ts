@@ -2,7 +2,18 @@ import * as net from "net";
 import { Interpreter } from "./interpreter";
 import { Database } from "./database";
 
-const database = new Database();
+
+function getArg(argName: string, ...args: string[]): string | undefined {
+  const idx = args.findIndex((arg) => arg === argName);
+  return idx !== -1 ? args[idx + 1] : undefined;
+}
+
+const config = {
+  dir: getArg("--dir", ...process.argv),
+  dbfilename: getArg("--dbfilename", ...process.argv),
+};
+
+const database = new Database(config);
 const interpreter = new Interpreter(database);
 
 const server: net.Server = net.createServer((connection: net.Socket) => {
